@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserServiceImpl.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">course_pro_backend</a> &gt; <a href="index.source.html" class="el_package">com.elec5619.course_pro_backend.service.impl</a> &gt; <span class="el_source">UserServiceImpl.java</span></div><h1>UserServiceImpl.java</h1><pre class="source lang-java linenums">package com.elec5619.course_pro_backend.service.impl;
+import com.elec5619.course_pro_backend.model.Course;
+import com.elec5619.course_pro_backend.model.UserCourse;
+
+import com.elec5619.course_pro_backend.repository.UserCourseRepository;
+
+import com.elec5619.course_pro_backend.model.User;
+import com.elec5619.course_pro_backend.repository.UserRepository;
+import com.elec5619.course_pro_backend.service.UserService;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+<span class="fc" id="L18">public class UserServiceImpl implements UserService {</span>
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private UserCourseRepository userCourseRepository;
+    @Override
+    public List&lt;User&gt; getAllUsers() {
+<span class="nc" id="L25">        List&lt;User&gt; users = userRepository.findAll();</span>
+<span class="nc" id="L26">        System.out.println(users);</span>
+<span class="nc" id="L27">        return users;</span>
+    }
+
+    @Override
+    public User registerUser(User user){
+<span class="nc bnc" id="L32" title="All 2 branches missed.">        if (userRepository.existsByEmail(user.getEmail())) {</span>
+            // 可以根据需要抛出异常，或者返回相应的错误消息
+<span class="nc" id="L34">            throw new IllegalArgumentException(&quot;Email already exists!&quot;);</span>
+        }
+<span class="nc" id="L36">        return userRepository.save(user);</span>
+    }
+
+    @Override
+    public User login(String email, String pwd) {
+<span class="nc" id="L41">        Optional&lt;User&gt; user = userRepository.findByEmail(email);</span>
+<span class="nc bnc" id="L42" title="All 4 branches missed.">        if (user.isPresent() &amp;&amp; user.get().getPwd().equals(pwd)) {</span>
+<span class="nc" id="L43">            return user.get();  // 用户名和密码匹配，返回用户对象</span>
+        } else {
+<span class="nc" id="L45">            return null;  // 用户名或密码错误</span>
+        }
+    }
+
+    @Override
+    public User findByUsername(String username) {
+<span class="nc" id="L51">        return null;</span>
+    }
+
+
+    @Override
+    public User findById(Integer id) {
+<span class="nc" id="L57">        return userRepository.findById(id).orElse(null);</span>
+    }
+
+    @Override
+    public void deleteUserById(Integer id) {
+<span class="nc" id="L62">        userRepository.deleteById(id);</span>
+<span class="nc" id="L63">    }</span>
+
+    @Override
+    public boolean existsById(Integer id) {
+<span class="nc" id="L67">        return userRepository.existsById(id);</span>
+    }
+
+    @Override
+    public void updateUser(User user) {
+<span class="nc" id="L72">        userRepository.save(user);</span>
+<span class="nc" id="L73">    }</span>
+
+
+    @Override
+    public Optional&lt;User&gt; getUserById(Integer userId) {
+<span class="nc" id="L78">        return userRepository.findById(userId);</span>
+    }
+
+
+    @Override
+    public List&lt;UserCourse&gt; getUserCourses(Integer userId) {
+<span class="nc" id="L84">        return userCourseRepository.findCoursesByUserId(userId);</span>
+    }
+
+
+    public boolean hasUserSelectedCourse(Integer userId, String courseId) {
+        // 检查用户是否选择了指定的课程
+<span class="nc" id="L90">        return userRepository.existsUserCourseByUserIdAndCourseId(userId, courseId);</span>
+    }
+
+    @Override
+    public User findByEmail(String email) {
+<span class="nc" id="L95">        Optional&lt;User&gt; userOptional = userRepository.findByEmail(email);</span>
+<span class="nc" id="L96">        return userOptional.orElse(null); // 如果找不到用户，则返回 null</span>
+    }
+
+    @Override
+    public void cancelCourse(String userId, String courseId)  {
+<span class="nc" id="L101">        User user = new User();</span>
+<span class="nc" id="L102">        user.setUserId(Integer.valueOf(userId));</span>
+<span class="nc" id="L103">        Course course = new Course();</span>
+<span class="nc" id="L104">        course.setCourseId(courseId);</span>
+<span class="nc" id="L105">        Optional&lt;UserCourse&gt; userCourseOpt = userCourseRepository.findByUserAndCourse(user, course);</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        if (userCourseOpt.isEmpty()) {</span>
+<span class="nc" id="L107">            throw new RuntimeException(&quot;Course not found for the user&quot;);</span>
+        }
+
+<span class="nc" id="L110">        userCourseRepository.delete(userCourseOpt.get());</span>
+<span class="nc" id="L111">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>

@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CourseController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">course_pro_backend</a> &gt; <a href="index.source.html" class="el_package">com.elec5619.course_pro_backend.controller</a> &gt; <span class="el_source">CourseController.java</span></div><h1>CourseController.java</h1><pre class="source lang-java linenums">package com.elec5619.course_pro_backend.controller;
+
+import com.elec5619.course_pro_backend.model.Comment;
+import com.elec5619.course_pro_backend.model.Course;
+import com.elec5619.course_pro_backend.model.User;
+import com.elec5619.course_pro_backend.model.UserCourse;
+import com.elec5619.course_pro_backend.repository.UserCourseRepository;
+import com.elec5619.course_pro_backend.response.ApiResponse;
+import com.elec5619.course_pro_backend.service.AIChatService;
+import com.elec5619.course_pro_backend.service.CommentService;
+import com.elec5619.course_pro_backend.service.CourseService;
+import com.elec5619.course_pro_backend.service.UserService;
+import com.elec5619.course_pro_backend.utils.JwtUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Optional;
+
+@RestController
+@RequestMapping(&quot;/api/courses&quot;)
+@CrossOrigin(origins = &quot;http://localhost:5173&quot;)
+<span class="fc" id="L25">public class CourseController {</span>
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserCourseRepository userCourseRepository;
+
+    @Autowired
+    private CourseService courseService;
+
+    @Autowired
+    private CommentService commentService;
+
+    @Autowired
+    private AIChatService aiChatService;
+
+    @GetMapping
+    public ResponseEntity&lt;List&lt;Course&gt;&gt; getCourses(@RequestHeader(&quot;Authorization&quot;) String token) {
+        // 验证 token 是否有效
+<span class="nc bnc" id="L48" title="All 4 branches missed.">        if (token != null &amp;&amp; token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L49">            token = token.substring(7);</span>
+
+            try {
+<span class="nc" id="L52">                String username = jwtUtil.extractUsername(token);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">                if (jwtUtil.validateToken(token, username)) {</span>
+<span class="nc" id="L54">                    List&lt;Course&gt; courses = courseService.getAllCourses();</span>
+<span class="nc" id="L55">                    return ResponseEntity.ok(courses);</span>
+                }
+<span class="nc" id="L57">            } catch (Exception e) {</span>
+<span class="nc" id="L58">                e.printStackTrace();</span>
+                // 如果访问令牌失效或无效
+<span class="nc" id="L60">                return ResponseEntity.status(403).body(null);</span>
+<span class="nc" id="L61">            }</span>
+        }
+
+<span class="nc" id="L64">        return ResponseEntity.status(401).build();</span>
+    }
+
+    @GetMapping(&quot;/{courseId}&quot;)
+    public ResponseEntity&lt;Course&gt; getCourseById(
+            @PathVariable String courseId,
+            @RequestHeader(&quot;Authorization&quot;) String token) {
+        // 验证 token 是否有效
+<span class="nc bnc" id="L72" title="All 4 branches missed.">        if (token != null &amp;&amp; token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L73">            token = token.substring(7);</span>
+
+            try {
+<span class="nc" id="L76">                String username = jwtUtil.extractUsername(token);</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">                if (jwtUtil.validateToken(token, username)) {</span>
+<span class="nc" id="L78">                    Course course = courseService.getCourseById(courseId);</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">                    if (course != null) {</span>
+<span class="nc" id="L80">                        return ResponseEntity.ok(course);</span>
+                    } else {
+                        // 如果未找到课程，返回 404 Not Found
+<span class="nc" id="L83">                        return ResponseEntity.status(404).build();</span>
+                    }
+                }
+<span class="nc" id="L86">            } catch (Exception e) {</span>
+                // 如果访问令牌失效或无效
+<span class="nc" id="L88">                return ResponseEntity.status(401).body(null);</span>
+<span class="nc" id="L89">            }</span>
+        }
+        // 如果 token 无效或没有传递，返回 403 Forbidden
+<span class="nc" id="L92">        return ResponseEntity.status(403).build();</span>
+    }
+
+    @DeleteMapping(&quot;/delete/{courseId}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteCourse(@PathVariable String courseId, @RequestHeader(&quot;Authorization&quot;) String token) {
+<span class="nc bnc" id="L97" title="All 4 branches missed.">        if (token != null &amp;&amp; token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L98">            token = token.substring(7);</span>
+
+            try {
+<span class="nc" id="L101">                String username = jwtUtil.extractUsername(token);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">                if (jwtUtil.validateToken(token, username)) {</span>
+<span class="nc" id="L103">                    courseService.deleteCourseById(courseId);</span>
+<span class="nc" id="L104">                    return ResponseEntity.noContent().build(); // 204 No Content</span>
+                }
+<span class="nc" id="L106">            } catch (Exception e) {</span>
+<span class="nc" id="L107">                e.printStackTrace();</span>
+<span class="nc" id="L108">                return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 Forbidden</span>
+<span class="nc" id="L109">            }</span>
+        }
+
+<span class="nc" id="L112">        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401 Unauthorized</span>
+    }
+
+    @PutMapping(&quot;/edit/{courseId}&quot;)
+    public ResponseEntity&lt;Void&gt; editCourse(@PathVariable String courseId, @RequestHeader(&quot;Authorization&quot;) String token, @RequestBody Course updatedCourse) {
+<span class="nc bnc" id="L117" title="All 4 branches missed.">        if (token != null &amp;&amp; token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L118">            token = token.substring(7);</span>
+
+            try {
+<span class="nc" id="L121">                String username = jwtUtil.extractUsername(token);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">                if (jwtUtil.validateToken(token, username)) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">                    if (courseService.existsById(courseId)) {</span>
+<span class="nc" id="L124">                        Course existingCourse = courseService.getCourseById(courseId);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                        if (existingCourse != null) {</span>
+
+<span class="nc" id="L127">                            existingCourse.setDescription(updatedCourse.getDescription());</span>
+
+<span class="nc" id="L129">                            existingCourse.setCourseName(updatedCourse.getCourseName());</span>
+<span class="nc" id="L130">                            existingCourse.setMajor(updatedCourse.getMajor());</span>
+<span class="nc" id="L131">                            existingCourse.setLocation(updatedCourse.getLocation());</span>
+<span class="nc" id="L132">                            existingCourse.setTimetable(updatedCourse.getTimetable());</span>
+<span class="nc" id="L133">                            existingCourse.setLecturer(updatedCourse.getLecturer());</span>
+
+<span class="nc" id="L135">                            courseService.updateCourse(existingCourse);</span>
+                        }
+<span class="nc" id="L137">                        return ResponseEntity.noContent().build(); // 204 No Content</span>
+                    } else {
+<span class="nc" id="L139">                        return ResponseEntity.status(HttpStatus.NOT_FOUND).build(); // 404 Not Found</span>
+                    }
+                }
+<span class="nc" id="L142">            } catch (Exception e) {</span>
+<span class="nc" id="L143">                e.printStackTrace();</span>
+<span class="nc" id="L144">                return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403 Forbidden</span>
+<span class="nc" id="L145">            }</span>
+        }
+
+<span class="nc" id="L148">        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build(); // 401 Unauthorized</span>
+    }
+
+
+    @PostMapping(&quot;/add&quot;)
+    public ResponseEntity&lt;Course&gt; addCourse(@RequestHeader(&quot;Authorization&quot;) String token, @RequestBody Course newCourse) {
+<span class="nc bnc" id="L154" title="All 4 branches missed.">        if (token != null &amp;&amp; token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L155">            token = token.substring(7);</span>
+            try {
+<span class="nc" id="L157">                String username = jwtUtil.extractUsername(token);</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">                if (jwtUtil.validateToken(token, username)) {</span>
+<span class="nc" id="L159">                    Course createdCourse = courseService.addCourse(newCourse);</span>
+<span class="nc" id="L160">                    return ResponseEntity.status(HttpStatus.CREATED).body(createdCourse);</span>
+                }
+<span class="nc" id="L162">            } catch (Exception e) {</span>
+<span class="nc" id="L163">                e.printStackTrace();</span>
+<span class="nc" id="L164">                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();</span>
+<span class="nc" id="L165">            }</span>
+        }
+<span class="nc" id="L167">        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();</span>
+    }
+
+    // Select a course for a user with token authentication
+    @PostMapping(&quot;/{courseId}/select&quot;)
+    public ResponseEntity&lt;String&gt; selectCourse(
+            @PathVariable String courseId,
+            @RequestParam Integer userId,
+            @RequestHeader(value = &quot;Authorization&quot;) String token) {
+
+        // 提取实际的Token（移除前面的 &quot;Bearer &quot; 部分）
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L179">            token = token.substring(7);</span>
+        } else {
+<span class="nc" id="L181">            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(&quot;Invalid token format&quot;);</span>
+        }
+
+        // 验证token
+        try {
+<span class="nc" id="L186">            String username = jwtUtil.extractUsername(token);</span>
+<span class="nc bnc" id="L187" title="All 4 branches missed.">            if (username == null || jwtUtil.isTokenExpired(token)) {</span>
+<span class="nc" id="L188">                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(&quot;Invalid or expired token&quot;);</span>
+            }
+<span class="nc" id="L190">        } catch (Exception e) {</span>
+<span class="nc" id="L191">            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(&quot;Invalid token&quot;);</span>
+<span class="nc" id="L192">        }</span>
+
+        // 检查用户和课程是否存在
+<span class="nc" id="L195">        Optional&lt;User&gt; userOptional = userService.getUserById(userId);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        if (userOptional.isEmpty()) {</span>
+<span class="nc" id="L197">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(&quot;User not found&quot;);</span>
+        }
+
+<span class="nc" id="L200">        Optional&lt;Course&gt; courseOptional = courseService.getCourseOptionalById(courseId);</span>
+<span class="nc bnc" id="L201" title="All 2 branches missed.">        if (courseOptional.isEmpty()) {</span>
+<span class="nc" id="L202">            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(&quot;Course not found&quot;);</span>
+        }
+
+<span class="nc" id="L205">        User user = userOptional.get();</span>
+<span class="nc" id="L206">        Course course = courseOptional.get();</span>
+
+        // 检查用户是否已经选了该课程
+<span class="nc" id="L209">        Optional&lt;UserCourse&gt; existingUserCourse = userCourseRepository.findByUserAndCourse(user, course);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">        if (existingUserCourse.isPresent()) {</span>
+<span class="nc" id="L211">            return ResponseEntity.status(HttpStatus.CONFLICT).body(&quot;User already selected this course&quot;);</span>
+        }
+
+        // 如果用户没有选过该课程，则添加到 user_courses 表
+<span class="nc" id="L215">        UserCourse userCourse = new UserCourse();</span>
+<span class="nc" id="L216">        userCourse.setUser(user);</span>
+<span class="nc" id="L217">        userCourse.setCourse(course);</span>
+<span class="nc" id="L218">        userCourseRepository.save(userCourse);</span>
+
+<span class="nc" id="L220">        return ResponseEntity.ok(&quot;Course selected successfully&quot;);</span>
+    }
+
+
+
+    @GetMapping(&quot;/{courseId}/analyze&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;String&gt;&gt; analyzeCourse(
+            @PathVariable String courseId,
+            @RequestHeader(value = &quot;Authorization&quot;) String token) {
+
+        // 提取实际的 Token（移除前面的 &quot;Bearer &quot; 部分）
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L232">            token = token.substring(7);</span>
+        } else {
+<span class="nc" id="L234">            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)</span>
+<span class="nc" id="L235">                    .body(new ApiResponse&lt;&gt;(false, &quot;Invalid token format&quot;, null));</span>
+        }
+
+        // 验证 Token
+        try {
+<span class="nc" id="L240">            String email = jwtUtil.extractUsername(token);</span>
+<span class="nc bnc" id="L241" title="All 4 branches missed.">            if (email == null || jwtUtil.isTokenExpired(token)) {</span>
+<span class="nc" id="L242">                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)</span>
+<span class="nc" id="L243">                        .body(new ApiResponse&lt;&gt;(false, &quot;Invalid or expired token&quot;, null));</span>
+            }
+<span class="nc" id="L245">        } catch (Exception e) {</span>
+<span class="nc" id="L246">            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)</span>
+<span class="nc" id="L247">                    .body(new ApiResponse&lt;&gt;(false, &quot;Invalid token&quot;, null));</span>
+<span class="nc" id="L248">        }</span>
+
+        // 根据 courseId 获取课程信息
+<span class="nc" id="L251">        Optional&lt;Course&gt; courseOptional = courseService.getCourseOptionalById(courseId);</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">        if (courseOptional.isEmpty()) {</span>
+<span class="nc" id="L253">            return ResponseEntity.status(HttpStatus.BAD_REQUEST)</span>
+<span class="nc" id="L254">                    .body(new ApiResponse&lt;&gt;(false, &quot;Course not found&quot;, null));</span>
+        }
+<span class="nc" id="L256">        Course course = courseOptional.get();</span>
+
+        // 构建 AI 请求消息，让 AI 介绍该课程
+<span class="nc" id="L259">        String aiMessage = &quot;Please describe the course in detail: &quot; + course.getCourseName();</span>
+
+        // 调用 AI 服务处理消息
+<span class="nc" id="L262">        String analysis = aiChatService.processUserMessage(aiMessage);</span>
+
+        // 在分析结果中添加分段符号（假设分段符号为 &quot;\n\n&quot;）
+<span class="nc" id="L265">        String formattedAnalysis = analysis.replaceAll(&quot;\n&quot;, &quot;\n\n&quot;);</span>
+
+        // 返回包含分析结果的 JSON 响应
+<span class="nc" id="L268">        return ResponseEntity.ok(new ApiResponse&lt;&gt;(true, &quot;Course analysis retrieved successfully&quot;, formattedAnalysis));</span>
+    }
+
+
+
+
+    @GetMapping(&quot;/{courseId}/comments&quot;)
+    public ResponseEntity&lt;List&lt;Comment&gt;&gt; getComments(
+            @PathVariable String courseId,
+            @RequestHeader(&quot;Authorization&quot;) String token) {
+<span class="nc bnc" id="L278" title="All 4 branches missed.">        if (token != null &amp;&amp; token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L279">            token = token.substring(7);</span>
+<span class="nc" id="L280">            String username = jwtUtil.extractUsername(token);</span>
+
+<span class="nc bnc" id="L282" title="All 2 branches missed.">            if (jwtUtil.validateToken(token, username)) {</span>
+<span class="nc" id="L283">                List&lt;Comment&gt; comments = commentService.getCommentsByCourseId(courseId);</span>
+<span class="nc" id="L284">                return ResponseEntity.ok(comments);</span>
+            }
+        }
+<span class="nc" id="L287">        return ResponseEntity.status(401).build();</span>
+    }
+
+    @PostMapping(&quot;/{courseId}/add-comments&quot;)
+    public ResponseEntity&lt;ApiResponse&lt;String&gt;&gt; addComment(
+            @PathVariable String courseId,
+            @RequestBody Comment comment,
+            @RequestHeader(&quot;Authorization&quot;) String token) {
+
+        // 确保 Authorization 头部存在且格式正确
+<span class="nc bnc" id="L297" title="All 4 branches missed.">        if (token != null &amp;&amp; token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L298">            token = token.substring(7);</span>
+<span class="nc" id="L299">            String email = jwtUtil.extractUsername(token); // 使用 jwtUtil 获取邮箱</span>
+
+<span class="nc bnc" id="L301" title="All 2 branches missed.">            if (jwtUtil.validateToken(token, email)) {</span>
+                // 根据邮箱查找用户对象
+<span class="nc" id="L303">                User user = userService.findByEmail(email);</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">                if (user != null) {</span>
+                    // 验证用户是否选择了课程
+<span class="nc" id="L306">                    boolean hasSelectedCourse = userService.hasUserSelectedCourse(user.getUserId(), courseId);</span>
+<span class="nc bnc" id="L307" title="All 2 branches missed.">                    if (!hasSelectedCourse) {</span>
+<span class="nc" id="L308">                        ApiResponse&lt;String&gt; response = new ApiResponse&lt;&gt;(false, &quot;User has not selected the course&quot;, null);</span>
+<span class="nc" id="L309">                        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);</span>
+                    }
+
+                    // 设置用户ID到评论中
+<span class="nc" id="L313">                    comment.setUserId(user.getUserId());</span>
+<span class="nc" id="L314">                    commentService.addComment(courseId, comment);</span>
+
+<span class="nc" id="L316">                    ApiResponse&lt;String&gt; response = new ApiResponse&lt;&gt;(true, &quot;Comment added successfully&quot;, null);</span>
+<span class="nc" id="L317">                    return ResponseEntity.ok(response);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L322">        ApiResponse&lt;String&gt; response = new ApiResponse&lt;&gt;(false, &quot;Unauthorized&quot;, null);</span>
+<span class="nc" id="L323">        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);</span>
+    }
+
+
+    @GetMapping(&quot;/{userId}/courses&quot;)
+    public ResponseEntity&lt;List&lt;UserCourse&gt;&gt; getUserCourses(
+            @PathVariable Integer userId,
+            @RequestHeader(&quot;Authorization&quot;) String token) {
+
+<span class="nc bnc" id="L332" title="All 4 branches missed.">        if (token != null &amp;&amp; token.startsWith(&quot;Bearer &quot;)) {</span>
+<span class="nc" id="L333">            token = token.substring(7);</span>
+<span class="nc" id="L334">            String username = jwtUtil.extractUsername(token);</span>
+
+<span class="nc bnc" id="L336" title="All 2 branches missed.">            if (jwtUtil.validateToken(token, username)) {</span>
+<span class="nc" id="L337">                List&lt;UserCourse&gt; userCourses = userService.getUserCourses(userId);</span>
+<span class="nc" id="L338">                return ResponseEntity.ok(userCourses);</span>
+            }
+        }
+<span class="nc" id="L341">        return ResponseEntity.status(401).build();</span>
+    }
+
+
+
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.8.202204050719</span></div></body></html>
